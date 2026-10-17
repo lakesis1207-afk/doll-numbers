@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#ffe9f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="숫자 놀이">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<title>인형이랑 숫자 놀이</title>
+<style>
+  :root {
+    --bg: #fff6f9;
+    --bg2: #ffe9f0;
+    --card: #ffffff;
+    --ink: #4a3b47;
+    --muted: #8f7f8b;
+    --pink: #ff8fb1;
+    --pink-dark: #e86a92;
+    --mint: #7fd8be;
+    --sky: #8ec5ff;
+    --sun: #ffd166;
+    --lilac: #c3a6ff;
+    --peach: #ffb38a;
+    --gray: #d9d2d7;
+    --red: #ff6b6b;
+    --shadow: 0 4px 0 rgba(0,0,0,.08), 0 8px 20px rgba(232,106,146,.12);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: linear-gradient(180deg, var(--bg2), var(--bg) 40%) fixed;
+    color: var(--ink);
+    font-family: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; background: none; }
+  button:disabled { opacity: .4; cursor: default; }
+  button:focus-visible { outline: 3px solid var(--pink-dark); outline-offset: 2px; }
+  .screen {
+    display: none; min-height: 100dvh; max-width: 520px; margin: 0 auto; flex-direction: column;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .screen.on { display: flex; }
+
+  /* 인형 얼굴: 사진이 있으면 사진, 없으면 곰 인형 그림 */
+  .doll { background: var(--bg2) center 35% / cover no-repeat; display: grid; place-items: center; overflow: hidden; }
+  .doll.noimg::after { content: "🧸"; font-size: 62%; line-height: 1; }
+
+  /* 정답 힌트: 반짝반짝 */
+  .glow { animation: glow 0.9s ease-in-out infinite !important; box-shadow: 0 0 0 6px var(--sun), var(--shadow) !important; }
+  @keyframes glow { 50% { box-shadow: 0 0 0 12px rgba(255,209,102,.35), var(--shadow); transform: scale(1.05); } }
+
+  /* ---------- 공통 버튼 ---------- */
+  .pill { background: var(--pink); color: #fff; border-radius: 999px; padding: 16px 26px; font-size: 22px; box-shadow: var(--shadow); }
+  .pill.light { background: #fff; color: var(--ink); }
+  .pill.wide { width: 100%; }
+  .link { color: var(--muted); font-size: 16px; padding: 10px; text-decoration: underline; }
+  .bottom { margin-top: auto; padding-top: 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .hold-btn { color: var(--muted); font-size: 14px; padding: 8px 14px; border-radius: 999px; border: 2px dashed var(--gray); position: relative; overflow: hidden; isolation: isolate; }
+  .hold-btn .fill { position: absolute; inset: 0; background: var(--bg2); transform-origin: left; transform: scaleX(0); z-index: -1; }
+  .hold-btn.holding .fill { transform: scaleX(1); transition: transform 2s linear; }
+
+  /* ---------- 설명 화면 ---------- */
+  .intro-head { text-align: center; }
+  .intro-head .big-doll { font-size: 76px; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
+  .intro-head h1 { font-size: 28px; margin: 8px 0 4px; color: var(--pink-dark); font-weight: normal; }
+  .intro-head p { margin: 0; color: var(--muted); font-size: 17px; line-height: 1.5; }
+  .info { background: var(--card); border-radius: 22px; padding: 16px 18px; box-shadow: var(--shadow); margin-top: 14px; }
+  .info h2 { margin: 0 0 8px; font-size: 19px; color: var(--pink-dark); font-weight: normal; }
+  .info ul { margin: 0; padding-left: 20px; font-size: 16px; line-height: 1.65; }
+  .info .lv { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; font-size: 16px; align-items: center; }
+  .info .lv b { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; color: #fff; font-weight: normal; font-size: 15px; }
+  .info small { color: var(--muted); }
+
+  /* ---------- 등록 단계 ---------- */
+  .step-head { text-align: center; }
+  .step-head .step { color: var(--muted); font-size: 15px; letter-spacing: .5px; }
+  .step-head h1 { font-size: 26px; margin: 4px 0 6px; color: var(--pink-dark); font-weight: normal; }
+  .step-head p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.5; }
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .slot { aspect-ratio: 1; max-width: 100%; border-radius: 22px; position: relative; border: 3px dashed var(--gray); background: #fff; display: grid; place-items: center; font-size: 15px; color: var(--muted); }
+  .slot .plus { font-size: 34px; line-height: 1; color: var(--pink); display: block; }
+  .slot.filled { border: 4px solid #fff; box-shadow: var(--shadow); background: center / cover no-repeat; }
+  .slot .del { position: absolute; right: -8px; top: -8px; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 16px; display: grid; place-items: center; }
+  .slot.busy::after { content: "⏳"; font-size: 28px; }
+  .name-preview { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 18px; }
+  .name-preview .doll { width: 140px; height: 140px; border-radius: 50%; border: 6px solid #fff; box-shadow: var(--shadow); font-size: 120px; }
+  .name-preview .say { font-size: 24px; color: var(--pink-dark); min-height: 32px; }
+  .name-input { width: 100%; margin-top: 14px; font: inherit; font-size: 26px; text-align: center; padding: 14px; border-radius: 18px; border: 3px solid var(--gray); background: #fff; color: var(--ink); outline: none; user-select: text; -webkit-user-select: text; }
+  .name-input:focus { border-color: var(--pink); }
+  .rec-list { display: grid; gap: 10px; margin-top: 16px; }
+  .rec-group { font-size: 17px; color: var(--pink-dark); margin: 8px 0 -2px 4px; }
+  .rec { background: #fff; border-radius: 18px; padding: 10px 12px; box-shadow: var(--shadow); display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+  .rec .ex { font-size: 18px; min-width: 0; }
+  .rec .ex small { display: block; color: var(--muted); font-size: 13px; }
+  .rec .btns { display: flex; gap: 6px; }
+  .rec .btns button { width: 48px; height: 48px; border-radius: 50%; background: var(--bg2); font-size: 20px; display: grid; place-items: center; }
+  .rec .btns .r { background: var(--red); color: #fff; }
+  .rec.recording .btns .r { animation: pulse 1s infinite; }
+  .rec .done-mark { color: #3aa58a; }
+  @keyframes pulse { 50% { transform: scale(1.12); } }
+  .notice { background: #fff1c2; border-radius: 14px; padding: 10px 14px; font-size: 15px; line-height: 1.5; margin-top: 12px; }
+  .notice:empty { display: none; }
+
+  /* ---------- 처음 화면 ---------- */
+  .hero { text-align: center; margin-top: 4px; position: relative; }
+  .hero-photo { width: 140px; height: 140px; border-radius: 50%; margin: 0 auto; font-size: 116px; border: 6px solid #fff; box-shadow: var(--shadow); animation: bob 2.4s ease-in-out infinite; }
+  .hero h1 { font-size: 26px; margin: 10px 0 2px; color: var(--pink-dark); letter-spacing: -0.5px; text-wrap: balance; font-weight: normal; }
+  .hero p { margin: 0; color: var(--muted); font-size: 16px; }
+  .corner { position: absolute; top: 0; width: 48px; height: 48px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); font-size: 22px; color: var(--muted); }
+  .corner.l { left: 0; } .corner.r { right: 0; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
+
+  .stages { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .tile { background: var(--card); border-radius: 22px; padding: 12px 10px 10px; box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; position: relative; transition: transform .1s; min-height: 132px; }
+  .tile:active { transform: scale(.96); }
+  .tile .no { position: absolute; left: 10px; top: 10px; width: 26px; height: 26px; border-radius: 9px; color: #fff; font-size: 14px; display: grid; place-items: center; }
+  .tile .ico { font-size: 42px; line-height: 1.15; }
+  .tile b { font-size: 18px; font-weight: normal; }
+  .tile small { color: var(--muted); font-size: 13px; }
+  .tile .stars { position: absolute; right: 10px; top: 10px; font-size: 12px; }
+  .tile.locked { opacity: .45; }
+  .tile.locked .ico { filter: grayscale(1); }
+  .tile.locked .no { background: var(--gray) !important; }
+  .parent { margin: 18px auto 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .parent-panel { display: none; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .parent-panel.on { display: flex; }
+  .parent-panel button { background: #fff; padding: 10px 14px; border-radius: 14px; box-shadow: var(--shadow); font-size: 15px; }
+
+  /* ---------- 놀이 화면 ---------- */
+  .top { display: flex; align-items: center; gap: 10px; }
+  .round-btn { width: 52px; height: 52px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; font-size: 24px; flex: none; }
+  .dots { flex: 1; display: flex; justify-content: center; gap: 8px; }
+  .dots i { width: 18px; height: 18px; border-radius: 50%; background: var(--gray); transition: background .3s, transform .3s; }
+  .dots i.done { background: var(--sun); transform: scale(1.15); }
+  .ask { display: flex; align-items: center; gap: 10px; margin: 14px 0 8px; }
+  .ask .doll { width: 64px; height: 64px; border-radius: 50%; flex: none; border: 4px solid #fff; box-shadow: var(--shadow); font-size: 54px; }
+  .bubble { background: #fff; border-radius: 20px; padding: 12px 16px; font-size: 21px; line-height: 1.35; box-shadow: var(--shadow); position: relative; flex: 1; min-width: 0; }
+  .bubble::before { content: ""; position: absolute; left: -8px; top: 22px; border: 8px solid transparent; border-left: 0; border-right-color: #fff; }
+  .play { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding: 6px 0; min-height: 220px; width: 100%; }
+
+  .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+  .choice { background: #fff; border-radius: 24px; box-shadow: var(--shadow); height: 92px; font-size: 44px; transition: transform .1s, background .2s, opacity .2s; }
+  .choice:nth-child(1) { color: var(--pink-dark); }
+  .choice:nth-child(2) { color: #3aa58a; }
+  .choice:nth-child(3) { color: #4a8ad8; }
+  .choice:active { transform: scale(.94); }
+  .wrong { opacity: .35; animation: shake .4s; }
+  .choice.right { background: var(--sun); }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .action { background: var(--mint); color: #fff; border-radius: 999px; padding: 14px 28px; font-size: 22px; box-shadow: var(--shadow); }
+  .action.light { background: #fff; color: var(--ink); }
+
+  /* 세어 보기 */
+  .flock { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 360px; }
+  .kk { width: 62px; height: 62px; border-radius: 50%; border: 4px solid #fff; box-shadow: var(--shadow); position: relative; transition: transform .15s; font-size: 52px; overflow: visible; }
+  .kk.counted { border-color: var(--sun); transform: scale(1.06); }
+  .kk .tag { position: absolute; right: -8px; top: -8px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 14px; background: var(--sun); color: var(--ink); font-size: 16px; display: none; place-items: center; z-index: 1; }
+  .kk.counted .tag { display: grid; }
+
+  /* 한눈에 몇 개 */
+  .dice { width: 220px; height: 220px; background: #fff; border-radius: 34px; box-shadow: var(--shadow); display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 22px; position: relative; }
+  .dice i { width: 44px; height: 44px; border-radius: 50%; place-self: center; visibility: hidden; }
+  .dice i.on { visibility: visible; }
+  .dice i.counted { outline: 5px solid var(--sun); }
+  .dice .cover { position: absolute; inset: 0; border-radius: 34px; background: var(--lilac); color: #fff; display: grid; place-items: center; font-size: 22px; text-align: center; line-height: 1.4; }
+  .dice .cover b { display: block; font-size: 64px; font-weight: normal; line-height: 1; }
+
+  /* 인형 밥 주기 */
+  .feed-top { display: flex; align-items: center; gap: 14px; }
+  .feed-top .doll { width: 96px; height: 96px; border-radius: 50%; border: 5px solid #fff; box-shadow: var(--shadow); font-size: 80px; }
+  .order { background: #fff; border-radius: 20px; padding: 8px 18px; box-shadow: var(--shadow); font-size: 40px; }
+  .plate { width: 100%; max-width: 340px; min-height: 120px; border-radius: 50% / 40%; background: #fff; border: 6px solid var(--bg2); box-shadow: var(--shadow); display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; padding: 14px 26px; position: relative; }
+  .plate .ghost { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed var(--pink); }
+  .fruit { width: 50px; height: 50px; font-size: 38px; line-height: 1; display: grid; place-items: center; border-radius: 50%; transition: transform .15s; }
+  .fruit:active { transform: scale(.85); }
+  .pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 360px; min-height: 56px; }
+  .pool .fruit { background: #fff; box-shadow: var(--shadow); }
+  .plate-count { position: absolute; right: 8px; bottom: -14px; background: var(--sun); border-radius: 12px; padding: 0 10px; font-size: 18px; line-height: 28px; }
+
+  /* 누가 더 많아 */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
+  .side { background: #fff; border-radius: 26px; box-shadow: var(--shadow); padding: 14px 8px; min-height: 210px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; font-size: 30px; line-height: 1; border: 4px solid transparent; }
+  .side.right { border-color: var(--sun); background: #fffaf0; }
+
+  /* 따라 그리기 */
+  .trace-wrap { position: relative; width: min(78vw, 320px); aspect-ratio: 1; max-width: 100%; background: #fff; border-radius: 30px; box-shadow: var(--shadow); touch-action: none; }
+  .trace-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 30px; }
+  .meter { width: min(78vw, 320px); height: 14px; border-radius: 7px; background: var(--bg2); overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--mint); transition: width .2s; }
+  .row-btns { display: flex; gap: 10px; }
+
+  /* 풍선 */
+  .sky { position: relative; width: 100%; height: 380px; overflow: hidden; border-radius: 26px; background: linear-gradient(180deg, #e6f3ff, #fff6f9); }
+  .balloon { position: absolute; bottom: -120px; width: 76px; height: 92px; border-radius: 50% 50% 47% 47%; color: #fff; font-size: 36px; display: grid; place-items: center; animation: rise linear infinite; box-shadow: inset -8px -10px 0 rgba(0,0,0,.08); }
+  .balloon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 34px; background: rgba(0,0,0,.18); }
+  .balloon.pop { animation: pop .35s forwards !important; }
+  .balloon.wrong { animation-play-state: paused; }
+  @keyframes rise { from { transform: translateY(0); } to { transform: translateY(-540px); } }
+  @keyframes pop { to { transform: scale(1.8); opacity: 0; } }
+
+  /* 숫자 기차 */
+  .train { display: flex; justify-content: center; align-items: flex-end; gap: 4px; max-width: 100%; }
+  .train .engine { font-size: 48px; line-height: 1; margin-bottom: 8px; }
+  .car { width: 52px; height: 56px; border-radius: 12px; flex: none; background: var(--sky); color: #fff; font-size: 28px; display: grid; place-items: center; position: relative; margin-bottom: 12px; }
+  .car::before, .car::after { content: ""; position: absolute; bottom: -12px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); }
+  .car::before { left: 8px; } .car::after { right: 8px; }
+  .car.blank { background: #fff; color: var(--pink-dark); border: 3px dashed var(--pink); }
+  .car.counted { background: var(--sun); color: var(--ink); }
+
+  /* 열 묶음 / 10씩 */
+  .bundle-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px; }
+  .bundle { background: #fff; border-radius: 18px; padding: 8px; box-shadow: var(--shadow); position: relative; display: grid; grid-template-columns: repeat(5, 22px); gap: 4px; border: 4px solid transparent; transition: border-color .2s; }
+  .bundle i { width: 22px; height: 22px; border-radius: 50%; font-size: 18px; font-style: normal; }
+  .bundle .ten { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); background: var(--sky); color: #fff; border-radius: 12px; padding: 0 10px; font-size: 16px; line-height: 26px; }
+  .bundle.counted { border-color: var(--sun); }
+  .bundle.counted .ten { background: var(--sun); color: var(--ink); }
+  .loose { display: flex; flex-wrap: wrap; gap: 8px; max-width: 160px; justify-content: center; }
+  .loose .kk { width: 46px; height: 46px; border-width: 3px; font-size: 38px; }
+  .loose .kk .tag { font-size: 13px; min-width: 24px; height: 24px; }
+  .bundles3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 22px 10px; width: 100%; max-width: 360px; justify-items: center; }
+  .bundles3 .bundle { grid-template-columns: repeat(5, 12px); gap: 3px; padding: 7px; }
+  .bundles3 .bundle i { width: 12px; height: 12px; font-size: 10px; }
+
+  /* 숫자 찾기 (두 번에 나눠) */
+  .target-card { background: #fff; border-radius: 20px; padding: 4px 26px; font-size: 52px; color: var(--pink-dark); box-shadow: var(--shadow); }
+  .rows { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .rows button { background: #fff; border-radius: 18px; box-shadow: var(--shadow); height: 58px; font-size: 22px; }
+  .rows button:nth-child(4n+1), .rows button:nth-child(4n+4) { background: #fff3f7; }
+  .nums { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
+  .nums button { background: #fff; border-radius: 18px; box-shadow: var(--shadow); aspect-ratio: 1; max-width: 100%; font-size: 30px; font-variant-numeric: tabular-nums; }
+  .nums button.right { background: var(--sun); }
+  .step-tag { color: var(--muted); font-size: 15px; }
+
+  /* ---------- 칭찬 ---------- */
+  .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(255,246,249,.75); backdrop-filter: blur(3px); z-index: 10; }
+  .overlay.on { display: grid; }
+  .cheer { text-align: center; animation: pop-in .35s ease-out; }
+  .cheer .doll { width: 190px; height: 190px; border-radius: 50%; margin: 0 auto; border: 8px solid #fff; box-shadow: var(--shadow); font-size: 160px; animation: jump .6s ease-in-out infinite alternate; }
+  .cheer .say { margin-top: 16px; font-size: 30px; color: var(--pink-dark); }
+  .cheer .big { font-size: 64px; line-height: 1; margin-top: 4px; }
+  @keyframes pop-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes jump { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-22px) rotate(4deg); } }
+  .confetti { position: fixed; top: -40px; font-size: 30px; pointer-events: none; z-index: 11; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+
+  /* ---------- 단계 끝 / 스티커 / 쉬기 ---------- */
+  .center { text-align: center; justify-content: center; align-items: center; gap: 10px; }
+  .center h2 { font-size: 30px; margin: 6px 0 0; color: var(--pink-dark); font-weight: normal; }
+  .center p { margin: 0; font-size: 19px; color: var(--muted); }
+  .center .row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; justify-content: center; }
+  .new-sticker { width: 170px; height: 170px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; font-size: 100px; border: 6px dashed var(--sun); animation: spin-in .7s ease-out; }
+  @keyframes spin-in { from { transform: scale(0) rotate(-200deg); } to { transform: scale(1) rotate(0); } }
+  .book { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .book div { aspect-ratio: 1; max-width: 100%; border-radius: 20px; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; font-size: 44px; }
+  .book div.empty { background: var(--bg2); box-shadow: none; color: var(--gray); font-size: 26px; border: 3px dashed var(--gray); }
+  .rest .doll { width: 200px; height: 200px; border-radius: 50%; border: 8px solid #fff; box-shadow: var(--shadow); font-size: 170px; filter: saturate(.7) brightness(.95); }
+  .rest .zzz { font-size: 44px; animation: bob 2s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; transition: none !important; } .balloon { animation-duration: 30s !important; } }
+</style>
+</head>
+<body>
+
+<!-- 1. 설명 화면 (부모님용) -->
+<section class="screen" id="intro">
+  <div class="intro-head">
+    <div class="big-doll" aria-hidden="true">🧸</div>
+    <h1>인형이랑 숫자 놀이</h1>
+    <p>아이의 애착인형과 함께<br>놀면서 숫자를 배워요.</p>
+  </div>
+  <div class="info">
+    <h2>처음에 준비해요</h2>
+    <ul>
+      <li>애착인형 사진 1~5장 찍기</li>
+      <li>인형 이름 정하기</li>
+      <li>부모님 목소리 녹음하기 (이름, 칭찬, 응원)</li>
+    </ul>
+  </div>
+  <div class="info">
+    <h2>놀이는 10단계예요</h2>
+    <div class="lv" id="introStages"></div>
+  </div>
+  <div class="info">
+    <h2>이렇게 배워요</h2>
+    <ul>
+      <li><b>물건 → 그림 → 숫자</b> 순서로, 쉬운 것부터 차근차근 익혀요.</li>
+      <li>틀리면 바로 답을 주지 않고 <b>응원 → 반짝 힌트 → 같이 세기</b> 순서로 도와줘요.</li>
+      <li>"똑똑해" 대신 <b>"끝까지 잘했어"</b>처럼 노력을 칭찬해요.</li>
+      <li>5문제를 맞히면 <b>스티커</b>를 받고 다음 놀이가 열려요.</li>
+    </ul>
+  </div>
+  <div class="info">
+    <h2>부모님께</h2>
+    <ul>
+      <li>옆에서 <b>같이 세어 주시면</b> 훨씬 잘 배워요.</li>
+      <li>하루 <b>10분</b>이 지나면 인형이 "졸려요" 하고 쉬어요. (부모님 메뉴에서 끌 수 있어요)</li>
+      <li>처음 화면 아래 버튼을 <b>2초 꾹</b> 누르면 단계 고르기, 인형 바꾸기, 다시 녹음을 할 수 있어요.</li>
+      <li>사진과 녹음은 <b>이 휴대폰에만</b> 저장되고 어디에도 올라가지 않아요.</li>
+      <li>브라우저 메뉴에서 <b>"홈 화면에 추가"</b>를 누르면 앱처럼 쓸 수 있어요.</li>
+    </ul>
+  </div>
+  <div class="bottom">
+    <button class="pill wide" id="introNext">인형 등록하기 ▶</button>
+  </div>
+</section>
+
+<!-- 2. 사진 찍기 -->
+<section class="screen" id="photos">
+  <div class="step-head">
+    <div class="step">1 / 3</div>
+    <h1>인형 사진을 찍어 주세요</h1>
+    <p>1장부터 5장까지 넣을 수 있어요.<br>여러 장이면 놀이 중에 번갈아 나와요.</p>
+  </div>
+  <div class="slots" id="slots"></div>
+  <input type="file" id="photoInput" accept="image/*" hidden>
+  <div class="notice" id="photoNotice"></div>
+  <div class="bottom">
+    <button class="pill wide" id="photosNext" disabled>다음 ▶</button>
+    <button class="link" id="photosSkip">사진 없이 하기</button>
+  </div>
+</section>
+
+<!-- 3. 이름 정하기 -->
+<section class="screen" id="naming">
+  <div class="step-head">
+    <div class="step">2 / 3</div>
+    <h1>인형 이름이 뭐예요?</h1>
+    <p>아이가 부르는 이름 그대로 써 주세요.</p>
+  </div>
+  <div class="name-preview">
+    <div class="doll" id="namePhoto"></div>
+    <div class="say" id="nameSay"></div>
+  </div>
+  <input class="name-input" id="nameInput" type="text" maxlength="12" placeholder="예: 토토" autocomplete="off" enterkeyhint="done">
+  <div class="bottom">
+    <button class="pill wide" id="nameNext" disabled>다음 ▶</button>
+  </div>
+</section>
+
+<!-- 4. 녹음하기 -->
+<section class="screen" id="record">
+  <div class="step-head">
+    <div class="step">3 / 3</div>
+    <h1>목소리를 녹음해 주세요</h1>
+    <p>🔴을 누르고 말한 뒤 ⏹을 눌러요. (최대 5초)<br>안 해도 기본 목소리가 나와요.</p>
+  </div>
+  <div class="notice" id="recNotice"></div>
+  <div class="rec-list" id="recList"></div>
+  <div class="bottom">
+    <button class="pill wide" id="recNext">다 했어요 ▶</button>
+  </div>
+</section>
+
+<!-- 5. 처음 화면 (단계 고르기) -->
+<section class="screen" id="home">
+  <div class="hero">
+    <button class="corner l" id="bookBtn" aria-label="스티커 모음책">📒</button>
+    <button class="corner r" id="helpBtn" aria-label="앱 설명 보기">?</button>
+    <button class="hero-photo doll" id="heroPhoto" aria-label="인사 듣기"></button>
+    <h1 id="homeTitle"></h1>
+    <p>놀이를 골라 볼까?</p>
+  </div>
+  <div class="stages" id="stages"></div>
+  <div class="parent">
+    <button class="hold-btn" id="parentHold"><span class="fill"></span>👩 부모님: 2초 동안 꾹 누르기</button>
+    <div class="parent-panel" id="parentPanel">
+      <button id="editDoll">인형 바꾸기</button>
+      <button id="editRec">다시 녹음하기</button>
+      <button id="restToggle"></button>
+      <button id="openAll">모든 단계 열기</button>
+      <button id="resetAll">처음부터 다시</button>
+      <button id="closeParent">닫기</button>
+    </div>
+  </div>
+</section>
+
+<!-- 6. 놀이 화면 -->
+<section class="screen" id="game">
+  <div class="top">
+    <button class="round-btn" id="backBtn" aria-label="처음으로">🏠</button>
+    <div class="dots" id="dots"></div>
+    <button class="round-btn" id="sayBtn" aria-label="다시 듣기">🔊</button>
+  </div>
+  <div class="ask">
+    <div class="doll" id="askDoll"></div>
+    <div class="bubble" id="bubble"></div>
+  </div>
+  <div class="play" id="play"></div>
+  <div class="choices" id="choices"></div>
+</section>
+
+<!-- 7. 단계 끝 화면 -->
+<section class="screen center" id="clear">
+  <div class="new-sticker" id="newSticker"></div>
+  <h2 id="clearTitle">다 했다!</h2>
+  <p id="clearSub"></p>
+  <div class="row">
+    <button class="pill" id="nextBtn">다음 놀이 ▶</button>
+    <button class="pill light" id="againBtn">한 번 더</button>
+    <button class="pill light" id="homeBtn">🏠</button>
+  </div>
+</section>
+
+<!-- 8. 스티커 모음책 -->
+<section class="screen" id="stickers">
+  <div class="top">
+    <button class="round-btn" id="bookBack" aria-label="처음으로">🏠</button>
+    <div style="flex:1;text-align:center;font-size:24px;color:var(--pink-dark)">스티커 모음책</div>
+    <div style="width:52px"></div>
+  </div>
+  <p style="text-align:center;color:var(--muted);margin:12px 0 0" id="bookCount"></p>
+  <div class="book" id="book"></div>
+</section>
+
+<!-- 9. 쉬는 시간 -->
+<section class="screen center rest" id="rest">
+  <div class="zzz" aria-hidden="true">💤</div>
+  <div class="doll" id="restDoll"></div>
+  <h2 id="restTitle"></h2>
+  <p>오늘은 여기까지! 내일 또 만나요.</p>
+  <div class="bottom" style="margin-top:24px">
+    <button class="hold-btn" id="restHold"><span class="fill"></span>👩 부모님: 2초 꾹 누르면 더 놀 수 있어요</button>
+  </div>
+</section>
+
+<!-- 칭찬 -->
+<div class="overlay" id="overlay">
+  <div class="cheer">
+    <div class="doll" id="cheerDoll"></div>
+    <div class="say" id="cheerSay"></div>
+    <div class="big" id="cheerBig"></div>
+  </div>
+</div>
+
+<script>
+  // ---------- 설정 ----------
+  const GOAL = 5;              // 한 단계에서 맞혀야 하는 문제 수
+  const MAX_PHOTOS = 5;
+  const MAX_REC_SEC = 5;
+  const REST_MIN = 10;         // 하루 놀이 시간(분)
+  const PRAISE_TEXT = ["끝까지 잘했어!", "열심히 했구나!", "포기 안 했네, 최고야!"];
+  const CHEER_TEXT = ["괜찮아, 다시 해 보자!", "거의 다 왔어!", "한 번 더 해 볼까?"];
+  const STICKERS = ["🐶", "🍎", "🐰", "🍌", "🐻", "🍓", "🐼", "🍇", "🦁", "🍉", "🐯", "🍑", "🐸", "🍒", "🐧", "🍍", "🐥", "🥝", "🐱", "🍊"];
+  const STAGES = [
+    { ico: "👀", name: "한눈에 몇 개?",  sub: "1~5 · 딱 보고 알기",   color: "var(--lilac)", play: () => qSubitize() },
+    { ico: "🧸", name: "세어 보기",      sub: "1~10 · 하나씩 세기",   color: "var(--pink)",  play: () => qCount() },
+    { ico: "🍎", name: "인형 밥 주기",   sub: "1~10 · 하나씩 짝짓기", color: "var(--red)",   play: () => qFeed() },
+    { ico: "⚖️", name: "누가 더 많아?",  sub: "1~10 · 많다/적다",     color: "var(--peach)", play: () => qCompare() },
+    { ico: "✏️", name: "따라 그리기",    sub: "0~9 · 숫자 모양",      color: "var(--mint)",  play: () => qTrace() },
+    { ico: "🎈", name: "풍선 터뜨리기",  sub: "1~10 · 숫자 알아보기", color: "var(--sky)",   play: () => qBalloon() },
+    { ico: "🚂", name: "숫자 기차",      sub: "1~20 · 숫자 순서",     color: "var(--sun)",   play: () => qTrain() },
+    { ico: "📦", name: "열 묶음",        sub: "11~20 · 10과 낱개",    color: "var(--mint)",  play: () => qTens() },
+    { ico: "🔟", name: "10씩 세기",      sub: "10~100 · 뛰어 세기",   color: "var(--sky)",   play: () => qSkip() },
+    { ico: "🔍", name: "숫자 찾기",      sub: "1~100 · 큰 수 찾기",   color: "var(--lilac)", play: () => qFind() },
+  ];
+
+  // ---------- 도우미 ----------
+  const $ = id => document.getElementById(id);
+  const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = arr => arr[rand(0, arr.length - 1)];
+  const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = rand(0, i); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  const range = (a, b) => { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function show(id) {
+    if (id !== "game") pauseClock();
+    document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+    window.scrollTo(0, 0);
+  }
+  // 받침이 있으면 true (영어 이름 등은 받침 없음으로 봄)
+  function hasBatchim(word) {
+    const c = (word || "").charCodeAt(word.length - 1) - 0xac00;
+    return c >= 0 && c <= 11171 && c % 28 !== 0;
+  }
+  const josa = (word, withB, withoutB) => word + (hasBatchim(word) ? withB : withoutB);
+  // 숫자를 읽는 말: 57 → 오십칠 (받침 확인용)
+  const SINO = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"];
+  const sinoWord = n => n === 0 ? "영" : n === 100 ? "백" : (n >= 10 ? (n >= 20 ? SINO[Math.floor(n / 10)] : "") + "십" : "") + SINO[n % 10];
+  const numJosa = (n, withB, withoutB) => n + (hasBatchim(sinoWord(n)) ? withB : withoutB);
+
+  // ---------- 저장 (이 휴대폰에만) ----------
+  const KEY = "doll-numbers-v1";
+  let settings = { setup: false, name: "", unlocked: 1, stars: [], stickers: [], restOn: true, playDate: "", playedMs: 0 };
+  try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+  // 예전(4단계) 기록이면 단계 기록만 새로 시작
+  if (settings.stars.length !== STAGES.length) { settings.stars = new Array(STAGES.length).fill(0); settings.unlocked = 1; }
+  function saveSettings() { try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) {} }
+
+  // 사진·녹음은 크기가 커서 IndexedDB(브라우저 안의 작은 저장소)에 보관
+  const store = (() => {
+    let dbp = null;
+    function open() {
+      return dbp || (dbp = new Promise((res, rej) => {
+        const r = indexedDB.open("doll-numbers", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("blobs");
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      }));
+    }
+    async function run(mode, fn) {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const t = db.transaction("blobs", mode);
+        const req = fn(t.objectStore("blobs"));
+        t.oncomplete = () => res(req.result);
+        t.onerror = () => rej(t.error);
+      });
+    }
+    return {
+      get: k => run("readonly", s => s.get(k)).catch(() => null),
+      set: (k, v) => run("readwrite", s => s.put(v, k)).catch(() => null),
+      del: k => run("readwrite", s => s.delete(k)).catch(() => null),
+    };
+  })();
+
+  // ---------- 인형 사진 ----------
+  let photos = new Array(MAX_PHOTOS).fill(null); // { blob, url }
+  const photoUrls = () => photos.filter(Boolean).map(p => p.url);
+  // 요소에 인형 얼굴 입히기 (i번째 사진, 없으면 곰 인형)
+  function paintDoll(node, i) {
+    const urls = photoUrls();
+    node.classList.add("doll");
+    if (!urls.length) { node.classList.add("noimg"); node.style.backgroundImage = ""; return; }
+    node.classList.remove("noimg");
+    node.style.backgroundImage = `url("${i == null ? pick(urls) : urls[i % urls.length]}")`;
+  }
+  // 사진을 작게 줄여서(긴 쪽 600px) 저장
+  async function shrinkPhoto(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      const s = Math.min(1, 600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * s);
+      c.height = Math.round(img.naturalHeight * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return await new Promise(r => c.toBlob(r, "image/jpeg", 0.85));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // ---------- 소리 ----------
+  // 모든 소리를 Web Audio(브라우저의 소리 재생 장치)로 틀어요.
+  // 카카오톡 안에서도 나오고, 한 번 누른 뒤에는 계속 나와요.
+  let actx = null;
+  function audio() {
+    if (!actx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      actx = new AC();
+    }
+    if (actx.state === "suspended") actx.resume();
+    return actx;
+  }
+  document.addEventListener("pointerdown", () => audio(), { capture: true });
+
+  const bufCache = new Map();
+  const recBlobs = {}; // 부모님 녹음: name, praise0~2, cheer0~2
+  function loadBuf(key) {
+    if (bufCache.has(key)) return bufCache.get(key);
+    const p = (async () => {
+      const ctx = audio();
+      if (!ctx) return null;
+      let data;
+      if (key.startsWith("rec:")) {
+        const b = recBlobs[key.slice(4)];
+        if (!b) return null;
+        data = await b.arrayBuffer();
+      } else {
+        const r = await fetch(`sounds/${key}.mp3`);
+        if (!r.ok) return null;
+        data = await r.arrayBuffer();
+      }
+      return await new Promise((res, rej) => ctx.decodeAudioData(data, res, rej));
+    })().catch(() => null);
+    bufCache.set(key, p);
+    return p;
+  }
+
+  let sayToken = 0, playing = null;
+  function stopSay() {
+    sayToken++;
+    if (playing) { try { playing.stop(); } catch (e) {} playing = null; }
+  }
+  // 소리 조각들을 차례로 틀기 (예: ["rec:name", "q1"])
+  async function say(keys) {
+    stopSay();
+    const my = sayToken;
+    const ctx = audio();
+    if (!ctx) return;
+    for (const k of keys.filter(Boolean)) {
+      const buf = await loadBuf(k);
+      if (my !== sayToken) return;
+      if (!buf) continue;
+      await new Promise(res => {
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.onended = res;
+        // 소리 장치가 멈춰 있어도 놀이가 멈추지 않게, 길이만큼 지나면 다음으로
+        setTimeout(res, buf.duration * 1000 + 400);
+        playing = src;
+        src.start();
+      });
+      if (my !== sayToken) return;
+      await sleep(90);
+    }
+    playing = null;
+  }
+
+  // 부모님 녹음이 있으면 그걸, 없으면 기본 목소리
+  const nameKey = () => recBlobs.name ? "rec:name" : null;
+  function praiseKey() {
+    const mine = [0, 1, 2].filter(i => recBlobs["praise" + i]);
+    return mine.length ? "rec:praise" + pick(mine) : "praise" + rand(0, 2);
+  }
+  function cheerKey() {
+    const mine = [0, 1, 2].filter(i => recBlobs["cheer" + i]);
+    return mine.length ? "rec:cheer" + pick(mine) : "cheer" + rand(0, 2);
+  }
+
+  // 효과음
+  function beep(freqs, dur = 0.12, type = "sine") {
+    const ctx = audio();
+    if (!ctx) return;
+    freqs.forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = f;
+      const t = ctx.currentTime + i * dur;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+    });
+  }
+  const sfx = {
+    tap:   () => beep([660], 0.08),
+    pop:   () => beep([880, 1320], 0.06, "square"),
+    right: () => beep([523, 659, 784, 1047], 0.1),
+    wrong: () => beep([300, 240], 0.14, "triangle"),
+  };
+
+  // 2초 꾹 누르는 버튼 (부모님용)
+  function holdButton(btn, onDone) {
+    let t = null;
+    btn.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      btn.classList.add("holding");
+      t = setTimeout(() => { btn.classList.remove("holding"); onDone(); }, 2000);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(ev => btn.addEventListener(ev, () => { clearTimeout(t); btn.classList.remove("holding"); }));
+    btn.addEventListener("contextmenu", e => e.preventDefault());
+  }
+
+  // ---------- 1. 설명 화면 ----------
+  STAGES.forEach((s, i) => {
+    const lv = $("introStages");
+    lv.appendChild(el("b", "", i + 1)).style.background = s.color;
+    lv.appendChild(el("span", "", `${s.ico} ${s.name} <small>${s.sub}</small>`));
+  });
+  $("introNext").onclick = () => {
+    if (settings.setup) { renderHome(); show("home"); }
+    else { renderSlots(); show("photos"); }
+  };
+  $("helpBtn").onclick = () => { $("introNext").textContent = "닫기"; show("intro"); };
+
+  // ---------- 2. 사진 찍기 ----------
+  let slotTarget = 0;
+  function renderSlots() {
+    const box = $("slots");
+    box.innerHTML = "";
+    for (let i = 0; i < MAX_PHOTOS; i++) {
+      const p = photos[i];
+      const s = el("button", "slot" + (p ? " filled" : ""));
+      if (p) {
+        s.style.backgroundImage = `url("${p.url}")`;
+        s.setAttribute("aria-label", `사진 ${i + 1} 바꾸기`);
+        const d = el("span", "del", "✕");
+        d.setAttribute("role", "button");
+        d.setAttribute("aria-label", `사진 ${i + 1} 지우기`);
+        d.onclick = async e => {
+          e.stopPropagation();
+          URL.revokeObjectURL(p.url);
+          photos[i] = null;
+          await store.del("photo" + i);
+          renderSlots();
+        };
+        s.appendChild(d);
+      } else {
+        s.innerHTML = `<span><span class="plus">＋</span>사진 ${i + 1}</span>`;
+      }
+      s.onclick = () => { slotTarget = i; $("photoInput").click(); };
+      box.appendChild(s);
+    }
+    $("photosNext").disabled = !photoUrls().length;
+  }
+  $("photoInput").onchange = async e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    $("slots").children[slotTarget].classList.add("busy");
+    try {
+      const blob = await shrinkPhoto(file);
+      if (photos[slotTarget]) URL.revokeObjectURL(photos[slotTarget].url);
+      photos[slotTarget] = { blob, url: URL.createObjectURL(blob) };
+      await store.set("photo" + slotTarget, blob);
+      $("photoNotice").textContent = "";
+    } catch (err) {
+      $("photoNotice").textContent = "사진을 불러오지 못했어요. 다른 사진으로 다시 해 주세요.";
+    }
+    renderSlots();
+  };
+  $("photosNext").onclick = () => goNaming();
+  $("photosSkip").onclick = () => goNaming();
+
+  // ---------- 3. 이름 정하기 ----------
+  function goNaming() {
+    paintDoll($("namePhoto"), 0);
+    $("nameInput").value = settings.name || "";
+    updateNamePreview();
+    show("naming");
+  }
+  function updateNamePreview() {
+    const n = $("nameInput").value.trim();
+    $("nameSay").textContent = n ? `${josa(n, "이랑", "랑")} 숫자 놀이!` : "";
+    $("nameNext").disabled = !n;
+  }
+  $("nameInput").addEventListener("input", updateNamePreview);
+  $("nameInput").addEventListener("keydown", e => { if (e.key === "Enter" && !$("nameNext").disabled) $("nameNext").click(); });
+  $("nameNext").onclick = () => {
+    settings.name = $("nameInput").value.trim();
+    saveSettings();
+    $("nameInput").blur();
+    goRecord();
+  };
+
+  // ---------- 4. 녹음하기 ----------
+  function recItems() {
+    const n = settings.name || "인형";
+    return [
+      { group: "이름 부르기", key: "name", ex: josa(n, "아~", "야~"), hint: "문제를 낼 때 나와요" },
+      ...PRAISE_TEXT.map((t, i) => ({ group: i === 0 ? "칭찬 (맞혔을 때)" : null, key: "praise" + i, ex: t, hint: `칭찬 ${i + 1}` })),
+      ...CHEER_TEXT.map((t, i) => ({ group: i === 0 ? "응원 (틀렸을 때)" : null, key: "cheer" + i, ex: t, hint: `응원 ${i + 1}` })),
+    ];
+  }
+  let recorder = null, recStream = null, recKey = null, recTimer = null;
+
+  function goRecord() {
+    let msg = "";
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      msg = /KAKAOTALK/i.test(navigator.userAgent)
+        ? "카카오톡 안에서는 녹음이 안 될 수 있어요. 오른쪽 위 메뉴에서 '다른 브라우저로 열기'를 눌러 크롬이나 사파리에서 열어 주세요."
+        : "이 브라우저에서는 녹음이 안 돼요. 크롬이나 사파리에서 열어 주세요.";
+    } else if (!window.isSecureContext) {
+      msg = "녹음은 https 주소에서만 돼요.";
+    }
+    $("recNotice").textContent = msg;
+    renderRec();
+    show("record");
+  }
+
+  function renderRec() {
+    const box = $("recList");
+    box.innerHTML = "";
+    recItems().forEach(it => {
+      if (it.group) box.appendChild(el("div", "rec-group", it.group));
+      const has = !!recBlobs[it.key];
+      const isRec = recKey === it.key;
+      const row = el("div", "rec" + (isRec ? " recording" : ""));
+      const ex = el("div", "ex");
+      ex.textContent = `"${it.ex}"`;
+      const small = el("small");
+      small.textContent = isRec ? "녹음 중… 다 말하면 ⏹" : has ? "✔ 녹음했어요" : it.hint;
+      if (has && !isRec) small.className = "done-mark";
+      ex.appendChild(small);
+      const btns = el("div", "btns");
+      const r = el("button", "r", isRec ? "⏹" : "●");
+      r.setAttribute("aria-label", isRec ? "녹음 멈추기" : "녹음하기");
+      r.disabled = !!recKey && !isRec;
+      r.onclick = () => isRec ? stopRec() : startRec(it.key);
+      btns.appendChild(r);
+      if (has && !isRec) {
+        const p = el("button", "", "▶");
+        p.setAttribute("aria-label", "들어 보기");
+        p.onclick = () => say(["rec:" + it.key]);
+        const d = el("button", "", "🗑");
+        d.setAttribute("aria-label", "지우기");
+        d.onclick = async () => {
+          delete recBlobs[it.key];
+          bufCache.delete("rec:" + it.key);
+          await store.del("rec:" + it.key);
+          renderRec();
+        };
+        btns.append(p, d);
+      }
+      row.append(ex, btns);
+      box.appendChild(row);
+    });
+  }
+
+  async function startRec(key) {
+    stopSay();
+    try {
+      recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      $("recNotice").textContent = err && err.name === "NotAllowedError"
+        ? "마이크 사용이 막혀 있어요. 주소창 옆 설정에서 마이크를 '허용'으로 바꿔 주세요."
+        : "마이크를 켜지 못했어요. 크롬이나 사파리에서 다시 해 주세요.";
+      return;
+    }
+    const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    recorder = new MediaRecorder(recStream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    recorder.ondataavailable = e => e.data && e.data.size && chunks.push(e.data);
+    recorder.onstop = async () => {
+      recStream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type: recorder.mimeType || type || "audio/webm" });
+      const k = recKey;
+      recKey = null; recorder = null;
+      clearTimeout(recTimer);
+      if (blob.size > 0) {
+        recBlobs[k] = blob;
+        bufCache.delete("rec:" + k);
+        await store.set("rec:" + k, blob);
+        renderRec();
+        say(["rec:" + k]); // 바로 들려주기
+      } else {
+        renderRec();
+      }
+    };
+    recKey = key;
+    recorder.start();
+    $("recNotice").textContent = "";
+    renderRec();
+    recTimer = setTimeout(stopRec, MAX_REC_SEC * 1000);
+  }
+  function stopRec() {
+    clearTimeout(recTimer);
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+  }
+  $("recNext").onclick = () => {
+    stopRec();
+    settings.setup = true;
+    saveSettings();
+    renderHome();
+    show("home");
+  };
+
+  // ---------- 5. 처음 화면 ----------
+  let parentMode = false;
+  const dollName = () => settings.name || "인형";
+  function renderHome() {
+    $("introNext").textContent = "인형 등록하기 ▶";
+    paintDoll($("heroPhoto"));
+    $("homeTitle").textContent = `${josa(dollName(), "이랑", "랑")} 숫자 놀이`;
+    $("restToggle").textContent = `10분 쉬기: ${settings.restOn ? "켜짐" : "꺼짐"}`;
+    const box = $("stages");
+    box.innerHTML = "";
+    STAGES.forEach((s, i) => {
+      const open = parentMode || i < settings.unlocked;
+      const b = el("button", "tile" + (open ? "" : " locked"));
+      const stars = settings.stars[i] || 0;
+      b.innerHTML = `
+        <span class="no" style="background:${s.color}">${open ? i + 1 : "🔒"}</span>
+        <span class="stars">${stars ? "⭐".repeat(Math.min(stars, 3)) : ""}</span>
+        <span class="ico">${s.ico}</span>
+        <b>${s.name}</b><small>${s.sub}</small>`;
+      b.onclick = () => {
+        if (!open) { sfx.wrong(); say(["locked"]); return; }
+        sfx.tap();
+        startStage(i);
+      };
+      box.appendChild(b);
+    });
+  }
+  $("heroPhoto").onclick = () => { sfx.tap(); paintDoll($("heroPhoto")); say([nameKey(), "hello"]); };
+
+  holdButton($("parentHold"), () => {
+    parentMode = true;
+    $("parentPanel").classList.add("on");
+    $("parentHold").style.display = "none";
+    renderHome();
+  });
+  function closeParent() {
+    parentMode = false;
+    $("parentPanel").classList.remove("on");
+    $("parentHold").style.display = "";
+    renderHome();
+  }
+  $("editDoll").onclick = () => { closeParent(); renderSlots(); show("photos"); };
+  $("editRec").onclick = () => { closeParent(); goRecord(); };
+  $("restToggle").onclick = () => { settings.restOn = !settings.restOn; saveSettings(); renderHome(); };
+  $("openAll").onclick = () => { settings.unlocked = STAGES.length; saveSettings(); closeParent(); };
+  $("resetAll").onclick = () => {
+    const b = $("resetAll");
+    if (!b.dataset.sure) {
+      b.dataset.sure = "1";
+      b.textContent = "정말요? 한 번 더 누르기";
+      setTimeout(() => { delete b.dataset.sure; b.textContent = "처음부터 다시"; }, 3000);
+      return;
+    }
+    delete b.dataset.sure;
+    b.textContent = "처음부터 다시";
+    settings.unlocked = 1; settings.stars = new Array(STAGES.length).fill(0); settings.stickers = []; saveSettings();
+    closeParent();
+  };
+  $("closeParent").onclick = closeParent;
+
+  // ---------- 스티커 모음책 ----------
+  $("bookBtn").onclick = () => {
+    const book = $("book");
+    book.innerHTML = "";
+    STICKERS.forEach(s => {
+      const have = settings.stickers.includes(s);
+      book.appendChild(el("div", have ? "" : "empty", have ? s : "?"));
+    });
+    $("bookCount").textContent = `${settings.stickers.length} / ${STICKERS.length}장 모았어요`;
+    show("stickers");
+  };
+  $("bookBack").onclick = () => { renderHome(); show("home"); };
+
+  // ---------- 10분 쉬기 ----------
+  let clockStart = 0;
+  const today = () => new Date().toDateString();
+  function startClock() {
+    if (settings.playDate !== today()) { settings.playDate = today(); settings.playedMs = 0; }
+    clockStart = Date.now();
+  }
+  function pauseClock() {
+    if (!clockStart) return;
+    settings.playedMs += Date.now() - clockStart;
+    clockStart = 0;
+    saveSettings();
+  }
+  function tired() {
+    if (!settings.restOn) return false;
+    const now = clockStart ? Date.now() - clockStart : 0;
+    return settings.playDate === today() && settings.playedMs + now >= REST_MIN * 60000;
+  }
+  function goRest() {
+    show("rest");
+    paintDoll($("restDoll"));
+    $("restTitle").textContent = `${josa(dollName(), "이", "가")} 졸려요`;
+    say([nameKey(), "sleepy"]);
+  }
+  holdButton($("restHold"), () => {
+    settings.playedMs = 0; saveSettings();
+    renderHome(); show("home");
+  });
+
+  // ---------- 6. 놀이 (공통) ----------
+  let stage = 0, score = 0, current = null, busy = false, lastAnswer = null;
+
+  function startStage(i) {
+    stage = i; score = 0; lastAnswer = null;
+    if (settings.playDate !== today()) { settings.playDate = today(); settings.playedMs = 0; }
+    if (tired()) { goRest(); return; }
+    show("game");
+    startClock();
+    nextQuestion();
+  }
+  function renderDots() {
+    const d = $("dots");
+    d.innerHTML = "";
+    for (let i = 0; i < GOAL; i++) d.appendChild(el("i", i < score ? "done" : ""));
+  }
+  function ask(text, keys) {
+    $("bubble").textContent = text;
+    current.keys = keys;
+    say(keys);
+  }
+  function pickAnswer(fn) {
+    let a;
+    do { a = fn(); } while (a === lastAnswer);
+    lastAnswer = a;
+    return a;
+  }
+  function makeChoices(answer, pool) {
+    const near = pool.filter(n => n !== answer).sort((a, b) => Math.abs(a - answer) - Math.abs(b - answer));
+    return shuffle([answer, ...shuffle(near.slice(0, 4)).slice(0, 2)]);
+  }
+  function nextQuestion() {
+    if (tired()) { goRest(); return; }
+    busy = false;
+    renderDots();
+    paintDoll($("askDoll"));
+    $("play").innerHTML = "";
+    $("choices").innerHTML = "";
+    $("choices").style.display = "";
+    current = { misses: 0 };
+    STAGES[stage].play();
+  }
+
+  // 틀렸을 때: 응원 → (2번째) 반짝 힌트 → (3번째) 같이 세기
+  function missed(firstKeys) {
+    current.misses++;
+    sfx.wrong();
+    if (current.misses >= 3 && current.together) { current.together(); return; }
+    if (current.misses >= 2 && current.glow) {
+      const g = current.glow();
+      if (g) g.classList.add("glow");
+      say([cheerKey(), "hint"]);
+      return;
+    }
+    say(firstKeys || [cheerKey()]);
+  }
+
+  // 같이 세기: 요소들을 하나씩 반짝이며 세어 주기
+  async function countTogether(items, keyFor, mark = "counted") {
+    busy = true;
+    await say(["together"]);
+    for (let i = 0; i < items.length; i++) {
+      items[i].classList.add(mark);
+      const tag = items[i].querySelector(".tag");
+      if (tag) tag.textContent = i + 1;
+      await say([keyFor(i + 1)]);
+    }
+    busy = false;
+  }
+
+  function choiceButtons(nums) {
+    const box = $("choices");
+    nums.forEach(v => {
+      const b = el("button", "choice", v);
+      b.dataset.v = v;
+      b.onclick = () => {
+        if (busy || b.classList.contains("wrong")) return;
+        if (v === current.answer) { b.classList.add("right"); correct(); }
+        else { b.classList.add("wrong"); missed(); }
+      };
+      box.appendChild(b);
+    });
+    current.glow = current.glow || (() => box.querySelector(`[data-v="${current.answer}"]`));
+  }
+
+  async function correct() {
+    busy = true;
+    stopSay();
+    score++;
+    renderDots();
+    sfx.right();
+    const pk = praiseKey();
+    $("cheerSay").textContent = PRAISE_TEXT[+pk.slice(-1)];
+    $("cheerBig").textContent = current.show != null ? current.show : current.answer;
+    paintDoll($("cheerDoll"));
+    $("overlay").classList.add("on");
+    confetti();
+    const started = Date.now();
+    await sleep(350);
+    await say([pk, current.answerKey]);
+    await sleep(Math.max(300, 2200 - (Date.now() - started)));
+    $("overlay").classList.remove("on");
+    if (score >= GOAL) finishStage(); else nextQuestion();
+  }
+
+  function confetti() {
+    const marks = ["⭐", "🌟", "💖", "🎈", "✨"];
+    for (let i = 0; i < 16; i++) {
+      const c = el("div", "confetti", marks[i % marks.length]);
+      c.style.left = rand(0, 95) + "vw";
+      c.style.animationDuration = (1.4 + Math.random() * 1.2) + "s";
+      c.style.animationDelay = (Math.random() * 0.3) + "s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 3000);
+    }
+  }
+
+  function finishStage() {
+    settings.stars[stage] = (settings.stars[stage] || 0) + 1;
+    const opened = stage + 1 < STAGES.length && settings.unlocked < stage + 2;
+    if (opened) settings.unlocked = stage + 2;
+    // 아직 없는 스티커 하나 받기
+    const left = STICKERS.filter(s => !settings.stickers.includes(s));
+    const got = left.length ? pick(left) : null;
+    if (got) settings.stickers.push(got);
+    saveSettings();
+    show("clear");
+    $("newSticker").textContent = got || "⭐";
+    $("newSticker").style.animation = "none"; void $("newSticker").offsetWidth; $("newSticker").style.animation = "";
+    $("clearTitle").textContent = `${STAGES[stage].name} 다 했다!`;
+    $("clearSub").textContent = (got ? "새 스티커를 받았어요! " : "스티커를 모두 모았어요! ") + (opened ? `${stage + 2}단계가 열렸어요 🎉` : "");
+    $("nextBtn").style.display = stage === STAGES.length - 1 ? "none" : "";
+    say(["clear", got ? "sticker" : null, opened ? "opened" : null]);
+    confetti();
+  }
+
+  // ---------- 1단계: 한눈에 몇 개? (1~5) ----------
+  const DICE = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8] };
+  function qSubitize() {
+    const n = pickAnswer(() => rand(1, 5));
+    Object.assign(current, { answer: n, answerKey: "g" + n });
+    const color = pick(["var(--pink)", "var(--sky)", "var(--mint)", "var(--peach)"]);
+    const dice = el("button", "dice");
+    dice.setAttribute("aria-label", "다시 보기");
+    const pips = [];
+    for (let i = 0; i < 9; i++) {
+      const p = el("i", DICE[n].includes(i) ? "on" : "");
+      p.style.background = color;
+      if (DICE[n].includes(i)) pips.push(p);
+      dice.appendChild(p);
+    }
+    const cover = el("div", "cover", "<b>?</b>눌러서 다시 보기");
+    cover.hidden = true;
+    dice.appendChild(cover);
+    let peekT = null;
+    const hide = () => { cover.hidden = false; };
+    const peek = ms => { clearTimeout(peekT); cover.hidden = true; peekT = setTimeout(hide, ms); };
+    dice.onclick = () => { if (!busy && !current.reveal) { sfx.tap(); peek(1200); } };
+    $("play").appendChild(dice);
+    peek(2000);
+    ask("잘 봐! 몇 개였을까?", [nameKey(), "sub"]);
+    choiceButtons(shuffle(makeChoices(n, range(1, 5))));
+    current.together = async () => {
+      current.reveal = true; clearTimeout(peekT); cover.hidden = true;
+      await countTogether(pips, k => "c" + k, "counted");
+      current.glow().classList.add("glow");
+    };
+  }
+
+  // ---------- 2단계: 세어 보기 (1~10) ----------
+  function countDoll(i, onCount) {
+    const k = el("button", "kk", `<span class="tag"></span>`);
+    k.setAttribute("aria-label", dollName());
+    paintDoll(k, i);
+    k.onclick = () => {
+      if (busy || k.classList.contains("counted")) return;
+      k.classList.add("counted");
+      k.querySelector(".tag").textContent = onCount();
+      sfx.tap();
+    };
+    return k;
+  }
+  function qCount() {
+    const n = pickAnswer(() => rand(1, 10));
+    Object.assign(current, { answer: n, answerKey: "m" + n });
+    const flock = el("div", "flock");
+    let counted = 0;
+    const items = [];
+    for (let i = 0; i < n; i++) { const k = countDoll(i, () => { counted++; say(["c" + counted]); return counted; }); items.push(k); flock.appendChild(k); }
+    $("play").appendChild(flock);
+    ask(`${josa(dollName(), "이", "가")} 몇 마리일까?`, [nameKey(), "q1"]);
+    choiceButtons(makeChoices(n, range(1, 10)));
+    current.together = async () => {
+      items.forEach(k => k.classList.remove("counted"));
+      await countTogether(items, k => "c" + k);
+      current.glow().classList.add("glow");
+    };
+  }
+
+  // ---------- 3단계: 인형 밥 주기 (1~10) ----------
+  function qFeed() {
+    const n = pickAnswer(() => rand(1, 10));
+    Object.assign(current, { answer: n, answerKey: "g" + n });
+    $("choices").style.display = "none";
+    const top = el("div", "feed-top");
+    const face = el("div");
+    paintDoll(face);
+    top.append(face, el("div", "order", `🍎 × ${n}`));
+    const plate = el("div", "plate");
+    const pcount = el("span", "plate-count", "0");
+    const pool = el("div", "pool");
+    const update = () => { pcount.textContent = plate.querySelectorAll(".fruit").length; };
+    const total = Math.min(12, n + rand(2, 3));
+    for (let i = 0; i < total; i++) {
+      const f = el("button", "fruit", "🍎");
+      f.setAttribute("aria-label", "사과");
+      f.onclick = () => {
+        if (busy) return;
+        sfx.tap();
+        if (f.parentNode === pool) {
+          const ghost = plate.querySelector(".ghost");
+          ghost ? plate.replaceChild(f, ghost) : plate.insertBefore(f, pcount);
+          const c = plate.querySelectorAll(".fruit").length;
+          say(["c" + c]);
+        } else {
+          pool.appendChild(f);
+          if (current.ghosts) addGhosts();
+        }
+        update();
+      };
+      pool.appendChild(f);
+    }
+    plate.appendChild(pcount);
+    // 힌트: 접시에 놓을 자리를 점선으로 보여 주기
+    function addGhosts() {
+      plate.querySelectorAll(".ghost").forEach(g => g.remove());
+      const need = n - plate.querySelectorAll(".fruit").length;
+      for (let i = 0; i < need; i++) plate.insertBefore(el("span", "ghost"), pcount);
+    }
+    const done = el("button", "action", "다 줬어요 ✔");
+    done.onclick = () => {
+      if (busy) return;
+      const c = plate.querySelectorAll(".fruit").length;
+      if (c === n) { correct(); return; }
+      missed([c < n ? "fless" : "fmore"]);
+    };
+    $("play").append(top, plate, pool, done);
+    ask(`${josa(dollName(), "이", "가")} 배고파요! 사과 ${n}개 주세요.`, [nameKey(), "f" + n]);
+    current.glow = () => { current.ghosts = true; addGhosts(); return null; };
+    current.together = async () => {
+      busy = true;
+      [...plate.querySelectorAll(".fruit")].forEach(f => pool.appendChild(f));
+      current.ghosts = true; addGhosts(); update();
+      await say(["together"]);
+      for (let i = 1; i <= n; i++) {
+        const f = pool.querySelector(".fruit");
+        plate.replaceChild(f, plate.querySelector(".ghost"));
+        update();
+        await say(["c" + i]);
+      }
+      busy = false;
+    };
+  }
+
+  // ---------- 4단계: 누가 더 많아? ----------
+  function qCompare() {
+    let a, b;
+    do { a = rand(1, 10); b = rand(1, 10); } while (Math.abs(a - b) < 1 || Math.abs(a - b) > 5);
+    const askMore = Math.random() < 0.7;
+    const win = askMore ? (a > b ? 0 : 1) : (a < b ? 0 : 1);
+    Object.assign(current, { answer: win, show: askMore ? "많아요!" : "적어요!", answerKey: null });
+    $("choices").style.display = "none";
+    const thing = pick(["🍓", "🐟", "🍪", "🌸", "⭐", "🍬"]);
+    const box = el("div", "compare");
+    const sides = [a, b].map((cnt, i) => {
+      const s = el("button", "side", thing.repeat(cnt));
+      s.setAttribute("aria-label", `${i === 0 ? "왼쪽" : "오른쪽"} 접시`);
+      s.onclick = () => {
+        if (busy || s.classList.contains("wrong")) return;
+        if (i === win) { s.classList.add("right"); correct(); }
+        else { s.classList.add("wrong"); setTimeout(() => s.classList.remove("wrong"), 600); missed(); }
+      };
+      box.appendChild(s);
+      return s;
+    });
+    $("play").appendChild(box);
+    ask(askMore ? "어느 쪽이 더 많을까?" : "어느 쪽이 더 적을까?", [nameKey(), askMore ? "more" : "less"]);
+    current.glow = () => sides[win];
+    current.together = async () => {
+      busy = true;
+      await say(["together", "g" + a]);
+      await say(["g" + b]);
+      sides[win].classList.add("glow");
+      busy = false;
+    };
+  }
+
+  // ---------- 5단계: 따라 그리기 (0~9) ----------
+  async function qTrace() {
+    const n = pickAnswer(() => rand(0, 9));
+    Object.assign(current, { answer: n, answerKey: "n" + n });
+    $("choices").style.display = "none";
+    const wrap = el("div", "trace-wrap");
+    const guide = el("canvas"), ink = el("canvas");
+    wrap.append(guide, ink);
+    const meter = el("div", "meter", "<i></i>");
+    const btns = el("div", "row-btns");
+    const clearB = el("button", "action light", "🧽 지우기");
+    const doneB = el("button", "action", "다 그렸어요 ✔");
+    btns.append(clearB, doneB);
+    $("play").append(wrap, meter, btns);
+    ask(`${numJosa(n, "을", "를")} 따라 그려 봐!`, [nameKey(), "n" + n, "trace"]);
+
+    try { await document.fonts.load('300px "Jua"'); } catch (e) {}
+    const S = 300, dpr = Math.min(2, window.devicePixelRatio || 1);
+    [guide, ink].forEach(c => { c.width = S * dpr; c.height = S * dpr; c.getContext("2d").scale(dpr, dpr); });
+    const g = guide.getContext("2d");
+    g.font = '270px "Jua", "Malgun Gothic", sans-serif';
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillStyle = "#ffd6e3";
+    g.fillText(String(n), S / 2, S / 2 + 14);
+    // 숫자 모양 자리(점검용)
+    const gd = g.getImageData(0, 0, guide.width, guide.height).data;
+    const STEP = 6 * dpr, W = guide.width;
+    const glyph = [];
+    for (let y = 0; y < guide.height; y += STEP) for (let x = 0; x < W; x += STEP) if (gd[(y * W + x) * 4 + 3] > 100) glyph.push(y * W + x);
+
+    const c = ink.getContext("2d");
+    c.lineCap = "round"; c.lineJoin = "round"; c.lineWidth = 34; c.strokeStyle = "rgba(232,106,146,.85)";
+    let drawing = false, last = null;
+    const pos = e => { const r = ink.getBoundingClientRect(); return [(e.clientX - r.left) * S / r.width, (e.clientY - r.top) * S / r.height]; };
+    ink.addEventListener("pointerdown", e => { if (busy) return; drawing = true; ink.setPointerCapture(e.pointerId); last = pos(e); c.beginPath(); c.arc(last[0], last[1], 17, 0, 7); c.fillStyle = c.strokeStyle; c.fill(); });
+    ink.addEventListener("pointermove", e => { if (!drawing) return; const p = pos(e); c.beginPath(); c.moveTo(last[0], last[1]); c.lineTo(p[0], p[1]); c.stroke(); last = p; });
+    const end = () => { if (!drawing) return; drawing = false; const s = measure(); if (s.cover >= 0.8 && s.precise >= 0.4) correct(); };
+    ink.addEventListener("pointerup", end);
+    ink.addEventListener("pointercancel", end);
+    // 얼마나 숫자 모양을 덮었는지, 얼마나 모양 안에 그렸는지
+    function measure() {
+      const d = c.getImageData(0, 0, ink.width, ink.height).data;
+      let on = 0;
+      for (const i of glyph) if (d[i * 4 + 3] > 0) on++;
+      let painted = 0, inside = 0;
+      for (let y = 0; y < ink.height; y += STEP) for (let x = 0; x < W; x += STEP) {
+        const i = y * W + x;
+        if (d[i * 4 + 3] > 0) { painted++; if (gd[i * 4 + 3] > 0) inside++; }
+      }
+      const r = { cover: glyph.length ? on / glyph.length : 0, precise: painted ? inside / painted : 0 };
+      meter.firstChild.style.width = Math.round(Math.min(1, r.cover / 0.8) * 100) + "%";
+      return r;
+    }
+    clearB.onclick = () => { if (busy) return; c.clearRect(0, 0, S, S); measure(); };
+    doneB.onclick = () => {
+      if (busy) return;
+      const s = measure();
+      if (s.cover >= 0.6 && s.precise >= 0.35) correct();
+      else { sfx.wrong(); say(["tracemore"]); }
+    };
+  }
+
+  // ---------- 6단계: 풍선 터뜨리기 (1~10) ----------
+  function qBalloon() {
+    const n = pickAnswer(() => rand(1, 10));
+    Object.assign(current, { answer: n, answerKey: "n" + n });
+    $("choices").style.display = "none";
+    const sky = el("div", "sky");
+    const nums = shuffle([n, ...shuffle(range(1, 10).filter(x => x !== n)).slice(0, 4)]);
+    const colors = shuffle(["#ff8fb1", "#8ec5ff", "#7fd8be", "#ffb38a", "#c3a6ff"]);
+    const heights = shuffle(range(0, nums.length - 1)); // 풍선 높이를 섞어서 시작
+    let target = null;
+    nums.forEach((v, i) => {
+      const b = el("button", "balloon", v);
+      b.style.left = `calc(${4 + i * 19}% + ${rand(-6, 6)}px)`;
+      b.style.background = colors[i % colors.length];
+      const dur = rand(9, 12);
+      b.style.animationDuration = dur + "s";
+      b.style.animationDelay = `-${((heights[i] + 0.5) * dur / nums.length * 0.8).toFixed(1)}s`;
+      b.onclick = () => {
+        if (busy) return;
+        if (v === n) { sfx.pop(); b.classList.add("pop"); correct(); }
+        else { b.classList.add("wrong"); setTimeout(() => b.classList.remove("wrong"), 600); missed(); }
+      };
+      if (v === n) target = b;
+      sky.appendChild(b);
+    });
+    $("play").appendChild(sky);
+    ask(`${n} 풍선을 찾아서 터뜨려!`, [nameKey(), "n" + n, "balloon"]);
+    current.glow = () => target;
+    current.together = () => { target.classList.add("glow"); say(["hint", "n" + n]); };
+  }
+
+  // ---------- 7단계: 숫자 기차 (1~20) ----------
+  function qTrain() {
+    const len = 5;
+    const start = rand(1, 20 - len + 1);
+    const blank = rand(1, len - 1);
+    const x = pickAnswer(() => start + blank);
+    const s0 = x - blank;
+    Object.assign(current, { answer: x, answerKey: "n" + x });
+    const train = el("div", "train");
+    train.appendChild(el("span", "engine", "🚂"));
+    const cars = [];
+    for (let i = 0; i < len; i++) {
+      const v = s0 + i;
+      const car = el("div", "car" + (i === blank ? " blank" : ""), i === blank ? "?" : v);
+      car.style.background = i === blank ? "" : ["var(--sky)", "var(--pink)", "var(--mint)", "var(--peach)", "var(--lilac)"][i];
+      cars.push(car);
+      train.appendChild(car);
+    }
+    $("play").appendChild(train);
+    ask("기차 빈칸에는 어떤 숫자가 올까?", [nameKey(), "train"]);
+    choiceButtons(makeChoices(x, range(1, 20)));
+    current.together = async () => {
+      busy = true;
+      await say(["together"]);
+      for (let i = 0; i < len; i++) {
+        cars[i].classList.add("counted");
+        if (i === blank) cars[i].textContent = "?";
+        await say(["n" + (s0 + i)]);
+      }
+      busy = false;
+      current.glow().classList.add("glow");
+    };
+  }
+
+  // ---------- 8단계: 열 묶음 (11~20) ----------
+  function bundle(onCount) {
+    const b = el("button", "bundle");
+    b.setAttribute("aria-label", "10개 묶음");
+    for (let i = 0; i < 10; i++) { const d = el("i"); paintDoll(d, i); b.appendChild(d); }
+    const tag = el("span", "ten", "10");
+    b.appendChild(tag);
+    b.onclick = () => {
+      if (busy || b.classList.contains("counted")) return;
+      b.classList.add("counted");
+      sfx.tap();
+      tag.textContent = onCount();
+    };
+    return b;
+  }
+  function qTens() {
+    const n = pickAnswer(() => rand(11, 20));
+    Object.assign(current, { answer: n, answerKey: "m" + n });
+    const row = el("div", "bundle-row");
+    const bun = bundle(() => { say(["c10"]); return 10; });
+    row.appendChild(bun);
+    row.appendChild(el("div", "", `<span style="font-size:34px;color:var(--muted)">+</span>`));
+    const loose = el("div", "loose");
+    let counted = 10;
+    const items = [];
+    for (let i = 0; i < n - 10; i++) { const k = countDoll(i, () => { counted++; say(["c" + counted]); return counted; }); items.push(k); loose.appendChild(k); }
+    row.appendChild(loose);
+    $("play").appendChild(row);
+    ask(`${josa(dollName(), "이", "가")} 모두 몇 마리일까?`, [nameKey(), "q2"]);
+    choiceButtons(makeChoices(n, range(11, 20)));
+    current.together = async () => {
+      busy = true;
+      await say(["together"]);
+      bun.classList.add("counted"); bun.querySelector(".ten").textContent = 10;
+      await say(["c10"]);
+      for (let i = 0; i < items.length; i++) {
+        items[i].classList.add("counted");
+        items[i].querySelector(".tag").textContent = 11 + i;
+        await say(["c" + (11 + i)]);
+      }
+      busy = false;
+      current.glow().classList.add("glow");
+    };
+  }
+
+  // ---------- 9단계: 10씩 세기 (10~100) ----------
+  function qSkip() {
+    const t = pickAnswer(() => rand(1, 10));
+    const n = t * 10;
+    Object.assign(current, { answer: n, answerKey: "n" + n });
+    const grid = el("div", "bundles3");
+    let counted = 0;
+    const items = [];
+    for (let i = 0; i < t; i++) { const b = bundle(() => { counted += 10; say(["n" + counted]); return counted; }); items.push(b); grid.appendChild(b); }
+    $("play").appendChild(grid);
+    ask("10씩 세어 볼까? 모두 얼마일까?", [nameKey(), "q3"]);
+    choiceButtons(makeChoices(n, range(1, 10).map(x => x * 10)));
+    current.together = async () => {
+      busy = true;
+      await say(["together"]);
+      for (let i = 0; i < items.length; i++) {
+        items[i].classList.add("counted");
+        items[i].querySelector(".ten").textContent = (i + 1) * 10;
+        await say(["n" + (i + 1) * 10]);
+      }
+      busy = false;
+      current.glow().classList.add("glow");
+    };
+  }
+
+  // ---------- 10단계: 숫자 찾기 (두 번에 나눠서) ----------
+  function qFind() {
+    const n = pickAnswer(() => rand(1, 100));
+    const rowNo = Math.floor((n - 1) / 10); // 0~9
+    Object.assign(current, { answer: n, answerKey: "n" + n });
+    $("choices").style.display = "none";
+    const card = el("div", "target-card", n);
+    const tag = el("div", "step-tag", "① 어느 줄에 있을까?");
+    const area = el("div", "rows");
+    $("play").append(card, tag, area);
+    ask(`${numJosa(n, "을", "를")} 찾아봐! 어느 줄에 있을까?`, [nameKey(), "n" + n, "row"]);
+
+    const rowBtns = range(0, 9).map(r => {
+      const b = el("button", "", `${r * 10 + 1} ~ ${r * 10 + 10}`);
+      b.onclick = () => {
+        if (busy) return;
+        if (r === rowNo) { sfx.tap(); stepTwo(); }
+        else { b.classList.add("wrong"); setTimeout(() => b.classList.remove("wrong"), 600); missed(); }
+      };
+      area.appendChild(b);
+      return b;
+    });
+    current.glow = () => rowBtns[rowNo];
+    current.together = () => { rowBtns[rowNo].classList.add("glow"); say(["hint"]); };
+
+    function stepTwo() {
+      current.misses = 0;
+      tag.textContent = "② 이제 숫자를 찾아봐!";
+      $("bubble").textContent = `${numJosa(n, "을", "를")} 찾아봐!`;
+      area.className = "nums";
+      area.innerHTML = "";
+      const btns = range(rowNo * 10 + 1, rowNo * 10 + 10).map(v => {
+        const b = el("button", "", v);
+        b.onclick = () => {
+          if (busy) return;
+          if (v === n) { b.classList.add("right"); correct(); }
+          else { b.classList.add("wrong"); setTimeout(() => b.classList.remove("wrong"), 600); missed(); }
+        };
+        area.appendChild(b);
+        return b;
+      });
+      const target = btns[(n - 1) % 10];
+      current.glow = () => target;
+      current.together = () => { target.classList.add("glow"); say(["hint", "n" + n]); };
+      current.keys = ["n" + n, "q4"];
+      say(current.keys);
+    }
+  }
+
+  // ---------- 버튼 ----------
+  $("sayBtn").onclick = () => current && current.keys && say(current.keys);
+  $("backBtn").onclick = () => { stopSay(); renderHome(); show("home"); };
+  $("homeBtn").onclick = $("backBtn").onclick;
+  $("againBtn").onclick = () => startStage(stage);
+  $("nextBtn").onclick = () => startStage(Math.min(stage + 1, STAGES.length - 1));
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pauseClock(); else if ($("game").classList.contains("on")) startClock(); });
+
+  // ---------- 시작 ----------
+  (async () => {
+    for (let i = 0; i < MAX_PHOTOS; i++) {
+      const b = await store.get("photo" + i);
+      if (b) photos[i] = { blob: b, url: URL.createObjectURL(b) };
+    }
+    for (const it of ["name", "praise0", "praise1", "praise2", "cheer0", "cheer1", "cheer2"]) {
+      const b = await store.get("rec:" + it);
+      if (b) recBlobs[it] = b;
+    }
+    if (settings.setup) { renderHome(); show("home"); }
+    else show("intro");
+  })();
+
+  // 홈 화면 앱(PWA): 인터넷 없이도 열리게 파일을 저장해 둠
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+</script>
+</body>
+</html>
