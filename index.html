@@ -226,7 +226,10 @@
   .shard { position: absolute; width: 14px; height: 14px; border-radius: 4px; pointer-events: none; animation: shard .5s ease-out forwards; }
   @keyframes boom { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 1; } 70% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
   @keyframes shard { to { transform: translate(var(--dx), var(--dy)) rotate(200deg) scale(.5); opacity: 0; } }
-  .balloon.wrong { animation-play-state: paused; }
+  /* 틀린 풍선: 떠오르기를 잃지 않고 잠깐 멈추기만 */
+  .balloon.wrong { animation-name: rise; animation-timing-function: linear; animation-iteration-count: infinite; animation-play-state: paused; }
+  /* 힌트 풍선: 하늘 가운데로 와서 멈춘 채 반짝반짝 */
+  .balloon.hinted { bottom: calc(50% - 46px); left: calc(50% - 38px) !important; z-index: 2; opacity: 1; }
   @keyframes rise { from { transform: translateY(0); } to { transform: translateY(-540px); } }
   @keyframes pop { to { transform: scale(1.8); opacity: 0; } }
 
@@ -1457,8 +1460,9 @@
     });
     $("play").appendChild(sky);
     ask(`${n} 풍선을 찾아서 터뜨려!`, [nameKey(), "n" + n, "balloon"]);
-    current.glow = () => target;
-    current.together = () => { target.classList.add("glow"); say(["hint", "n" + n]); };
+    const hintTarget = () => { target.classList.remove("wrong"); target.classList.add("glow", "hinted"); };
+    current.glow = () => { hintTarget(); return null; };
+    current.together = () => { hintTarget(); say(["hint", "n" + n]); };
   }
 
   // ---------- 7단계: 숫자 기차 (1~20) ----------
