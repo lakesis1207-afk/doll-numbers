@@ -162,13 +162,24 @@
   .wrong { opacity: .35; animation: shake .4s; }
   .choice.right { background: var(--sun); }
   @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-  .action { background: var(--mint); color: #fff; border-radius: 999px; padding: 14px 28px; font-size: 22px; box-shadow: var(--shadow); }
-  .action.light { background: #fff; color: var(--ink); }
+  /* 글을 몰라도 알 수 있는 그림 버튼 (목소리로 색·모양을 알려 줘요) */
+  .icon-btn { width: 80px; height: 80px; border-radius: 50%; box-shadow: var(--shadow); font-size: 38px; display: grid; place-items: center; color: #fff; flex: none; transition: transform .1s; }
+  .icon-btn:active { transform: scale(.92); }
+  .icon-btn.go { background: #3ec28f; }
+  .icon-btn.erase { background: var(--sky); }
+  .icon-btn.next { background: var(--pink); }
+  .icon-btn.again { background: var(--sun); }
+  .icon-btn.home { background: #fff; }
 
   /* 세어 보기 */
   .flock { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 360px; }
   .kk { width: 62px; height: 62px; border-radius: 50%; border: 4px solid #fff; box-shadow: var(--shadow); position: relative; transition: transform .15s; font-size: 52px; overflow: visible; }
   .kk.counted { border-color: var(--sun); transform: scale(1.06); }
+  /* 인형 개수에 따라 크기 조절 (적을수록 크게) */
+  .flock.big { max-width: 360px; gap: 14px; } .flock.big .kk { width: 110px; height: 110px; font-size: 92px; }
+  .flock.mid { max-width: 320px; gap: 12px; } .flock.mid .kk { width: 95px; height: 95px; font-size: 80px; }
+  .flock.sm  { max-width: 350px; gap: 10px; } .flock.sm .kk  { width: 78px; height: 78px; font-size: 66px; }
+  .flock .kk .tag { min-width: 34px; height: 34px; font-size: 20px; border-radius: 17px; }
   .kk .tag { position: absolute; right: -8px; top: -8px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 14px; background: var(--sun); color: var(--ink); font-size: 16px; display: none; place-items: center; z-index: 1; }
   .kk.counted .tag { display: grid; }
 
@@ -193,8 +204,9 @@
   .plate-count { position: absolute; right: 8px; bottom: -14px; background: var(--sun); border-radius: 12px; padding: 0 10px; font-size: 18px; line-height: 28px; }
 
   /* 누가 더 많아 */
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; }
-  .side { background: #fff; border-radius: 26px; box-shadow: var(--shadow); padding: 14px 8px; min-height: 210px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; font-size: 30px; line-height: 1; border: 4px solid transparent; }
+  .compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; width: 100%; }
+  .side { background: #fff; border-radius: 26px; box-shadow: var(--shadow); padding: 14px 2px; min-height: 270px; min-width: 0; display: grid; align-content: center; justify-content: center; gap: 5px 4px; border: 4px solid transparent; }
+  .side span { font-size: var(--sz); line-height: 1; width: var(--sz); height: var(--sz); display: grid; place-items: center; }
   .side.right { border-color: var(--sun); background: #fffaf0; }
 
   /* 따라 그리기 */
@@ -208,7 +220,12 @@
   .sky { position: relative; width: 100%; height: 380px; overflow: hidden; border-radius: 26px; background: linear-gradient(180deg, #e6f3ff, #fff6f9); }
   .balloon { position: absolute; bottom: -120px; width: 76px; height: 92px; border-radius: 50% 50% 47% 47%; color: #fff; font-size: 36px; display: grid; place-items: center; animation: rise linear infinite; box-shadow: inset -8px -10px 0 rgba(0,0,0,.08); }
   .balloon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 34px; background: rgba(0,0,0,.18); }
-  .balloon.pop { animation: pop .35s forwards !important; }
+  .balloon.pop { visibility: hidden; }
+  /* 풍선 터지는 효과: "펑!" + 조각 */
+  .boom { position: absolute; font-size: 34px; color: var(--pink-dark); font-weight: bold; transform: translate(-50%, -50%); animation: boom .5s ease-out forwards; pointer-events: none; text-shadow: 0 2px 0 #fff; }
+  .shard { position: absolute; width: 14px; height: 14px; border-radius: 4px; pointer-events: none; animation: shard .5s ease-out forwards; }
+  @keyframes boom { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 1; } 70% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+  @keyframes shard { to { transform: translate(var(--dx), var(--dy)) rotate(200deg) scale(.5); opacity: 0; } }
   .balloon.wrong { animation-play-state: paused; }
   @keyframes rise { from { transform: translateY(0); } to { transform: translateY(-540px); } }
   @keyframes pop { to { transform: scale(1.8); opacity: 0; } }
@@ -230,8 +247,9 @@
   .bundle.counted { border-color: var(--sun); }
   .bundle.counted .ten { background: var(--sun); color: var(--ink); }
   .loose { display: flex; flex-wrap: wrap; gap: 8px; max-width: 160px; justify-content: center; }
-  .loose .kk { width: 46px; height: 46px; border-width: 3px; font-size: 38px; }
-  .loose .kk .tag { font-size: 13px; min-width: 24px; height: 24px; }
+  .loose { max-width: 240px; gap: 10px; }
+  .loose .kk { width: 70px; height: 70px; border-width: 4px; font-size: 58px; }
+  .loose .kk .tag { font-size: 17px; min-width: 30px; height: 30px; }
   .bundles3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 22px 10px; width: 100%; max-width: 360px; justify-items: center; }
   .bundles3 .bundle { grid-template-columns: repeat(5, 12px); gap: 3px; padding: 7px; }
   .bundles3 .bundle i { width: 12px; height: 12px; font-size: 10px; }
@@ -410,9 +428,9 @@
   <h2 id="clearTitle">다 했다!</h2>
   <p id="clearSub"></p>
   <div class="row">
-    <button class="pill" id="nextBtn">다음 놀이 ▶</button>
-    <button class="pill light" id="againBtn">한 번 더</button>
-    <button class="pill light" id="homeBtn">🏠</button>
+    <button class="icon-btn again" id="againBtn" aria-label="한 번 더">🔁</button>
+    <button class="icon-btn next" id="nextBtn" aria-label="다음 놀이">▶</button>
+    <button class="icon-btn home" id="homeBtn" aria-label="처음으로">🏠</button>
   </div>
 </section>
 
@@ -657,9 +675,24 @@
       o.start(t); o.stop(t + dur + 0.02);
     });
   }
+  // 풍선 "뻥" 소리: 짧은 잡음을 빠르게 줄여서 만들어요
+  function noiseBurst() {
+    const ctx = audio();
+    if (!ctx) return;
+    const len = Math.round(ctx.sampleRate * 0.18);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+    const src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf;
+    lp.type = "lowpass"; lp.frequency.value = 2200;
+    g.gain.value = 0.9;
+    src.connect(lp).connect(g).connect(ctx.destination);
+    src.start();
+  }
   const sfx = {
     tap:   () => beep([660], 0.08),
-    pop:   () => beep([880, 1320], 0.06, "square"),
+    pop:   () => noiseBurst(),
     right: () => beep([523, 659, 784, 1047], 0.1),
     wrong: () => beep([300, 240], 0.14, "triangle"),
   };
@@ -941,7 +974,7 @@
     $("bookCount").textContent = `${settings.stickers.length} / ${STICKERS.length}장 모았어요`;
     show("stickers");
   };
-  $("bookBack").onclick = () => { renderHome(); show("home"); };
+  $("bookBack").onclick = () => { renderHome(); show("home"); say(["btn_home"]); };
 
   // ---------- 10분 쉬기 ----------
   let clockStart = 0;
@@ -991,8 +1024,24 @@
   function ask(text, keys) {
     $("bubble").textContent = text;
     current.keys = keys;
-    say(keys);
+    say(keys).then(armIdle);
   }
+
+  // 8초 동안 아무것도 안 누르면 "스피커를 누르면 다시 들을 수 있어!" (문제마다 한 번만)
+  let idleT = null;
+  function armIdle() {
+    clearTimeout(idleT);
+    const q = current;
+    if (!q || q.idleDone) return;
+    idleT = setTimeout(() => {
+      if (current !== q || busy || !$("game").classList.contains("on")) return;
+      q.idleDone = true;
+      $("sayBtn").classList.add("glow");
+      setTimeout(() => $("sayBtn").classList.remove("glow"), 3000);
+      say(["btn_speaker"]);
+    }, 8000);
+  }
+  $("game").addEventListener("pointerdown", () => { if (idleT) armIdle(); });
   function pickAnswer(fn) {
     let a;
     do { a = fn(); } while (a === lastAnswer);
@@ -1104,7 +1153,7 @@
     $("clearTitle").textContent = `${STAGES[stage].name} 다 했다!`;
     $("clearSub").textContent = (got ? "새 스티커를 받았어요! " : "스티커를 모두 모았어요! ") + (opened ? `${stage + 2}단계가 열렸어요 🎉` : "");
     $("nextBtn").style.display = stage === STAGES.length - 1 ? "none" : "";
-    say(["clear", got ? "sticker" : null, opened ? "opened" : null]);
+    say(["clear", got ? "sticker" : null, opened ? "opened" : null, stage === STAGES.length - 1 ? null : "btn_clear"]);
     confetti();
   }
 
@@ -1123,17 +1172,34 @@
       if (DICE[n].includes(i)) pips.push(p);
       dice.appendChild(p);
     }
-    const cover = el("div", "cover", "<b>?</b>눌러서 다시 보기");
-    cover.hidden = true;
+    const cover = el("div", "cover", "<b>👀</b>");
     dice.appendChild(cover);
     let peekT = null;
     const hide = () => { cover.hidden = false; };
     const peek = ms => { clearTimeout(peekT); cover.hidden = true; peekT = setTimeout(hide, ms); };
     dice.onclick = () => { if (!busy && !current.reveal) { sfx.tap(); peek(1200); } };
     $("play").appendChild(dice);
-    peek(2000);
-    ask("잘 봐! 몇 개였을까?", [nameKey(), "sub"]);
     choiceButtons(shuffle(makeChoices(n, range(1, 5))));
+    // 가린 채 "잘 봐!" → 점 2초 → 다시 가리고 "몇 개였을까?"
+    const q = current;
+    current.replay = async () => {
+      busy = true;
+      clearTimeout(peekT);
+      cover.innerHTML = "<b>👀</b>";
+      cover.hidden = false;
+      $("bubble").textContent = "잘 봐!";
+      await say([nameKey(), "sub1"]);
+      if (current !== q) return;
+      cover.hidden = true;
+      await sleep(2000);
+      if (current !== q) return;
+      cover.innerHTML = "<b>?</b>눌러서 다시 보기";
+      cover.hidden = false;
+      busy = false;
+      $("bubble").textContent = "몇 개였을까?";
+      say(["sub2"]).then(armIdle);
+    };
+    current.replay();
     current.together = async () => {
       current.reveal = true; clearTimeout(peekT); cover.hidden = true;
       await countTogether(pips, k => "c" + k, "counted");
@@ -1157,7 +1223,7 @@
   function qCount() {
     const n = pickAnswer(() => rand(1, 10));
     Object.assign(current, { answer: n, answerKey: "m" + n });
-    const flock = el("div", "flock");
+    const flock = el("div", "flock " + (n <= 3 ? "big" : n <= 6 ? "mid" : "sm"));
     let counted = 0;
     const items = [];
     for (let i = 0; i < n; i++) { const k = countDoll(i, () => { counted++; say(["c" + counted]); return counted; }); items.push(k); flock.appendChild(k); }
@@ -1211,7 +1277,8 @@
       const need = n - plate.querySelectorAll(".fruit").length;
       for (let i = 0; i < need; i++) plate.insertBefore(el("span", "ghost"), pcount);
     }
-    const done = el("button", "action", "다 줬어요 ✔");
+    const done = el("button", "icon-btn go", "✔");
+    done.setAttribute("aria-label", "다 줬어요");
     done.onclick = () => {
       if (busy) return;
       const c = plate.querySelectorAll(".fruit").length;
@@ -1219,7 +1286,7 @@
       missed([c < n ? "fless" : "fmore"]);
     };
     $("play").append(top, plate, pool, done);
-    ask(`${josa(dollName(), "이", "가")} 배고파요! 사과 ${n}개 주세요.`, [nameKey(), "f" + n]);
+    ask(`${josa(dollName(), "이", "가")} 배고파요! 사과 ${n}개 주세요.`, [nameKey(), "f" + n, "btn_feed"]);
     current.glow = () => { current.ghosts = true; addGhosts(); return null; };
     current.together = async () => {
       busy = true;
@@ -1246,8 +1313,14 @@
     $("choices").style.display = "none";
     const thing = pick(["🍓", "🐟", "🍪", "🌸", "⭐", "🍬"]);
     const box = el("div", "compare");
+    // 두 접시의 그림 크기는 항상 같게 (많은 쪽 개수에 맞춤), 줄 맞춰 놓기
+    const most = Math.max(a, b);
+    const sz = most <= 3 ? 56 : most <= 6 ? 46 : 38;
+    const cols = most <= 3 ? 2 : 3;
     const sides = [a, b].map((cnt, i) => {
-      const s = el("button", "side", thing.repeat(cnt));
+      const s = el("button", "side", `<span>${thing}</span>`.repeat(cnt));
+      s.style.setProperty("--sz", sz + "px");
+      s.style.gridTemplateColumns = `repeat(${Math.min(cols, cnt)}, ${sz}px)`;
       s.setAttribute("aria-label", `${i === 0 ? "왼쪽" : "오른쪽"} 접시`);
       s.onclick = () => {
         if (busy || s.classList.contains("wrong")) return;
@@ -1279,11 +1352,13 @@
     wrap.append(guide, ink);
     const meter = el("div", "meter", "<i></i>");
     const btns = el("div", "row-btns");
-    const clearB = el("button", "action light", "🧽 지우기");
-    const doneB = el("button", "action", "다 그렸어요 ✔");
+    const clearB = el("button", "icon-btn erase", "🧽");
+    clearB.setAttribute("aria-label", "지우기");
+    const doneB = el("button", "icon-btn go", "✔");
+    doneB.setAttribute("aria-label", "다 그렸어요");
     btns.append(clearB, doneB);
     $("play").append(wrap, meter, btns);
-    ask(`${numJosa(n, "을", "를")} 따라 그려 봐!`, [nameKey(), "n" + n, "trace"]);
+    ask(`${numJosa(n, "을", "를")} 따라 그려 봐!`, [nameKey(), "n" + n, "trace", "btn_trace"]);
 
     try { await document.fonts.load('300px "Jua"'); } catch (e) {}
     const S = 300, dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -1327,8 +1402,26 @@
       if (busy) return;
       const s = measure();
       if (s.cover >= 0.6 && s.precise >= 0.35) correct();
-      else { sfx.wrong(); say(["tracemore"]); }
+      else { sfx.wrong(); say(["tracemore", "btn_erase"]); }
     };
+  }
+
+  // 풍선 자리에 "펑!" 글자와 조각 8개를 튀게 하기
+  function burst(sky, b, color) {
+    const sr = sky.getBoundingClientRect(), br = b.getBoundingClientRect();
+    const x = br.left - sr.left + br.width / 2, y = br.top - sr.top + br.height / 2;
+    const word = el("span", "boom", "펑!");
+    word.style.left = x + "px"; word.style.top = y + "px";
+    sky.appendChild(word);
+    for (let k = 0; k < 8; k++) {
+      const s = el("span", "shard");
+      const ang = k / 8 * Math.PI * 2, dist = rand(50, 80);
+      s.style.left = x - 7 + "px"; s.style.top = y - 7 + "px";
+      s.style.background = color;
+      s.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+      s.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+      sky.appendChild(s);
+    }
   }
 
   // ---------- 6단계: 풍선 터뜨리기 (1~10) ----------
@@ -1350,7 +1443,13 @@
       b.style.animationDelay = `-${((heights[i] + 0.5) * dur / nums.length * 0.8).toFixed(1)}s`;
       b.onclick = () => {
         if (busy) return;
-        if (v === n) { sfx.pop(); b.classList.add("pop"); correct(); }
+        if (v === n) {
+          busy = true;
+          sfx.pop();
+          burst(sky, b, colors[i % colors.length]);
+          b.classList.add("pop");
+          setTimeout(correct, 500);
+        }
         else { b.classList.add("wrong"); setTimeout(() => b.classList.remove("wrong"), 600); missed(); }
       };
       if (v === n) target = b;
@@ -1516,8 +1615,12 @@
   }
 
   // ---------- 버튼 ----------
-  $("sayBtn").onclick = () => current && current.keys && say(current.keys);
-  $("backBtn").onclick = () => { stopSay(); renderHome(); show("home"); };
+  $("sayBtn").onclick = () => {
+    if (!current || busy) return;
+    if (current.replay) current.replay();
+    else if (current.keys) say(current.keys);
+  };
+  $("backBtn").onclick = () => { renderHome(); show("home"); say(["btn_home"]); };
   $("homeBtn").onclick = $("backBtn").onclick;
   $("againBtn").onclick = () => startStage(stage);
   $("nextBtn").onclick = () => startStage(Math.min(stage + 1, STAGES.length - 1));
